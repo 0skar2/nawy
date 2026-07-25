@@ -22,11 +22,16 @@ mod time;
 use time::time;
 mod info;
 use info::info;
+mod pingr;
+use pingr::pingr;
 
 #[async_trait]
 // implementation of event handler so when message contents == something -> then something happens
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
+        if msg.author.id == 1527332908287656036 {
+            return;
+        };
         // ping command
         if msg.content == ".ping" {
             ping(&ctx, &msg).await;
@@ -44,11 +49,9 @@ impl EventHandler for Handler {
         // meow list :p
         let meows = vec!["meow", "nya", "mrrrp", "prr", "purr"];
 
-        if msg.author.id != 1527332908287656036 {
-            // the thing that checks if message is meowing :3
-            if meows.iter().any(|e| msg.content.contains(e)) {
-                let _ = msg.channel_id.say(&ctx.http, "meow:3c").await;
-            }
+        // the thing that checks if message is meowing :3
+        if meows.iter().any(|e| msg.content.contains(e)) {
+            let _ = msg.channel_id.say(&ctx.http, "meow:3c").await;
         }
 
         if msg.content == ".cat" {
@@ -64,6 +67,9 @@ impl EventHandler for Handler {
         }
         if msg.content == ".info" {
             info(&ctx, &msg).await;
+        }
+        if msg.content.starts_with(".pingr") {
+            pingr(&ctx, &msg).await;
         }
     }
 
