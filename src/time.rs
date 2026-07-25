@@ -7,6 +7,6 @@ pub async fn time(ctx: &Context, msg: &Message) {
         Ok(n) => n.as_secs(),
         Err(_) => panic!("SystemTime before UNIX EPOCH!"),
     };
-    let timemsg = format!("The curent time is <t:{}>", timenow);
+    let timemsg = format!("The current time is <t:{}>", timenow);
     let _ = msg.channel_id.say(&ctx.http, timemsg).await;
 }
