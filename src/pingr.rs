@@ -1,5 +1,4 @@
 // import the lobotomy tools
-use reqwest::Error;
 use serenity::all::Context;
 use serenity::all::EditMessage;
 use serenity::all::Message;
@@ -39,7 +38,7 @@ pub async fn pingr(ctx: &Context, msg: &Message) {
             let errormsg = format!("Error: {e:?}");
             let builder = EditMessage::new().content(errormsg);
 
-            if let Err(why) = response_msg.edit(&ctx.http, builder).await {
+            if let Err(_why) = response_msg.edit(&ctx.http, builder).await {
                 eprintln!("Error: {e:?}");
             }
 
