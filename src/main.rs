@@ -2,9 +2,9 @@
 // my first attempt at a discord bot written in rust, lord save us all
 
 // imports :3
+use anyhow::anyhow;
 use serenity::async_trait; // Required for Serenity v0.12+
 use serenity::model::channel::Message;
-use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use std::env;
 struct Handler;
@@ -29,53 +29,41 @@ use pingr::pingr;
 // implementation of event handler so when message contents == something -> then something happens
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.id == 1527332908287656036 {
-            return;
-        };
-        // ping command
-        if msg.content == ".ping" {
-            ping(&ctx, &msg).await;
-        }
-        // coinflip command
-        if msg.content == ".coinflip" {
-            coinflip(&ctx, &msg).await;
-        }
-        // hackclub command
-        if msg.content == ".hackclub" {
-            hackclub(&ctx, &msg).await;
-        }
+        if msg.author.id != 1527332908287656036 {
+            let message = msg.content.clone();
+            if message.starts_with(".") {
+                let list: Vec<&str> = message.split(" ").collect();
+                let cmd = list[0];
+                let args = &list[1..];
+                if let Err(err) = match cmd {
+                    "help" => help(&ctx, &msg).await,
+                    "coinflip" => coinflip(&ctx, &msg).await,
+                    "hackclub" => hackclub(&ctx, &msg).await,
+                    "cat" => cat(&ctx, &msg).await,
+                    "time" => time(&ctx, &msg).await,
+                    "info" => info(&ctx, &msg).await,
+                    "ping" => ping(&ctx, &msg).await,
+                    "pingr" => pingr(&ctx, &msg, args).await,
+                    _ => Err(anyhow!("I dont know this command")),
+                } {
+                    let _ = msg.channel_id.say(&ctx.http, format!("{}", err)).await;
+                }
+            } else {
+                // automeower :3
+                // meow list :p
+                let meows = vec!["meow", "mrow", "nya", "mrrrp", "prr", "purr"];
 
-        // automeower :3
-        // meow list :p
-        let meows = vec!["meow", "nya", "mrrrp", "prr", "purr"];
-
-        // the thing that checks if message is meowing :3
-        if meows.iter().any(|e| msg.content.contains(e)) {
-            let _ = msg.channel_id.say(&ctx.http, "meow:3c").await;
-        }
-
-        if msg.content == ".cat" {
-            cat(&ctx, &msg).await;
-        }
-
-        if msg.content == ".help" {
-            help(&ctx, &msg).await;
-        }
-
-        if msg.content == ".time" {
-            time(&ctx, &msg).await;
-        }
-        if msg.content == ".info" {
-            info(&ctx, &msg).await;
-        }
-        if msg.content.starts_with(".pingr") {
-            pingr(&ctx, &msg).await;
+                // the thing that checks if message is meowing :3
+                if meows.iter().any(|mrow| msg.content.contains(mrow)) {
+                    let _ = msg.channel_id.say(&ctx.http, "meow:3c").await;
+                };
+            }
         }
     }
 
-    async fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected :3", ready.user.name)
-    }
+    // async fn ready(&self, _: Context, ready: Ready) {
+    //     println!("{} is connected :3", ready.user.name)
+    // }
 }
 
 #[tokio::main]

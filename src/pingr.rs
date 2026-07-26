@@ -1,50 +1,42 @@
 // import the lobotomy tools
+use anyhow::anyhow;
+use reqwest::Url;
 use serenity::all::Context;
 use serenity::all::EditMessage;
 use serenity::all::Message;
 use std::time::Instant;
 
 // functionmaxxing + giving it the message contents
-pub async fn pingr(ctx: &Context, msg: &Message) {
-    let Some((_, raw_input)) = msg.content.split_once(".pingr ") else {
-        return;
-    };
+pub async fn pingr(ctx: &Context, msg: &Message, args: &[&str]) -> anyhow::Result<()> {
+    if args.is_empty() {
+        return Err(anyhow!("At least 1 argument is required"));
+    }
 
-    let input = raw_input.trim();
-    let target_url = if input.starts_with("http://") || input.starts_with("https://") {
-        input.to_string()
-    } else {
-        format!("https://{}", input)
-    };
+    let mut url = Url::parse(args[0])?;
+
+    if !["http", "https"].contains(&url.scheme()) {
+        url.set_scheme("https").unwrap();
+    }
 
     let start_time = Instant::now();
-    let mut response_msg = match msg.channel_id.say(&ctx.http, "Pinging.... :3").await {
-        Ok(m) => m,
-        Err(_) => return,
-    };
+    let mut response_msg = msg.channel_id.say(&ctx.http, "Pinging.... :3").await?;
 
-    let response = match reqwest::get(&target_url).await {
-        Ok(v) => {
+    match reqwest::get(url.clone()).await {
+        Ok(_response) => {
             let latency = start_time.elapsed().as_millis();
-            let new_content = format!(" Latency to **{}** is **{}ms** :3", input, latency);
-            let builder = EditMessage::new().content(new_content);
-
-            if let Err(why) = response_msg.edit(&ctx.http, builder).await {
-                println!("Error editing the message: {why:?}");
-            }
-            v
+            let new_content = format!(" Latency to **{}** is **{}ms** :3", url, latency);
+            response_msg
+                .edit(&ctx.http, EditMessage::new().content(new_content))
+                .await?;
         }
-        Err(e) => {
-            let errormsg = format!("Error: {e:?}");
-            let builder = EditMessage::new().content(errormsg);
-
-            if let Err(_why) = response_msg.edit(&ctx.http, builder).await {
-                eprintln!("Error: {e:?}");
-            }
-
-            return;
+        Err(err) => {
+            response_msg
+                .edit(
+                    &ctx.http,
+                    EditMessage::new().content(format!("Error: {err:?}")),
+                )
+                .await?;
         }
     };
-
-    println!("meow shit works ig: {}", response.status());
+    Ok(())
 }
