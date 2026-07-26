@@ -7,16 +7,30 @@ use std::time::Instant;
 
 // functionmaxxing + giving it the message contents
 pub async fn pingr(ctx: &Context, msg: &Message) {
-    let url = msg.content.split_once(" ");
+    let Some((_, raw_input)) = msg.content.split_once(".pingr ") else {
+        return;
+    };
+
+    let input = raw_input.trim();
+    let target_url = if input.starts_with("http://") || input.starts_with("https://") {
+        input.to_string()
+    } else {
+        format!("https://{}", input)
+    };
+
     let start_time = Instant::now();
-    let response_msg = msg.channel_id.say(&ctx.http, "Pinging.... :3").await;
-    let response = match reqwest::get("https://gayboi.club").await {
+    let mut response_msg = match msg.channel_id.say(&ctx.http, "Pinging.... :3").await {
+        Ok(m) => m,
+        Err(_) => return,
+    };
+
+    let response = match reqwest::get(&target_url).await {
         Ok(v) => {
             let latency = start_time.elapsed().as_millis();
-            let new_content = format!(" Latency to **gayboi.club** is **{}ms** :3", latency);
+            let new_content = format!(" Latency to **{}** is **{}ms** :3", input, latency);
             let builder = EditMessage::new().content(new_content);
 
-            if let Err(why) = response_msg.expect("REASON").edit(&ctx.http, builder).await {
+            if let Err(why) = response_msg.edit(&ctx.http, builder).await {
                 println!("Error editing the message: {why:?}");
             }
             v
@@ -25,10 +39,8 @@ pub async fn pingr(ctx: &Context, msg: &Message) {
             let errormsg = format!("Error: {e:?}");
             let builder = EditMessage::new().content(errormsg);
 
-            if let Ok(mut sent_msg) = response_msg {
-                if let Err(why) = sent_msg.edit(&ctx.http, builder).await {
-                    eprintln!("Error: {e:?}");
-                }
+            if let Err(why) = response_msg.edit(&ctx.http, builder).await {
+                eprintln!("Error: {e:?}");
             }
 
             return;
